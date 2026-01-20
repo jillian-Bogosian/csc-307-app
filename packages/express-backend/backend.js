@@ -50,6 +50,12 @@ const addUser = (user) => {
   return user;
 };
 
+const deleteUser = (index) => {
+    users["users_list"].splice(index, 1);
+    return users["user_list"]
+};
+
+
 app.post("/users", (req, res) => {
   const userToAdd = req.body;
   addUser(userToAdd);
@@ -65,6 +71,18 @@ app.get("/users/:id", (req, res) => {
     res.send(result);
   }
 });
+
+app.delete("/users/:id", (req, res) => {
+    const id = req.params["id"]; 
+    let result = findUserById(id);
+    if (result === undefined) {
+    res.status(404).send("Resource not found.");
+  } else {
+    deleteUser(id);
+    res.status(204).send();
+  }
+});
+
 
 app.get("/users", (req, res) => {
   const name = req.query.name;
