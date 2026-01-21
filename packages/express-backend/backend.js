@@ -84,19 +84,53 @@ app.delete("/users/:id", (req, res) => {
 });
 
 
-app.get("/users", (req, res) => {
-  const name = req.query.name;
-  if (name != undefined) {
-    let result = findUserByName(name);
-    result = { users_list: result };
-    res.send(result);
-  } else {
-    res.send(users);
-  }
-});
+// app.get("/users", (req, res) => {
+//   const name = req.query.name;
+//   if (name != undefined) {
+//     let result = findUserByName(name);
+//     result = { users_list: result };
+//     res.send(result);
+//   } else {
+//     res.send(users);
+//   }
+// });
+
+// app.get("/users", (req, res) => {
+//   res.send(users);
+// });
+
+const findUserByNameAndJob = (name, job) => {
+  return users["users_list"].filter(
+    (user) => user["name"] === name && user["job"] === job
+  );
+};
+
+
+// app.get("/users", (req, res) => {
+//   const name = req.query.name;
+//   const job = req.query.job
+  
+//   if (name != undefined && job !== undefined) {
+//     let result = findUserByNameAndJob(name, job);
+//     result = { users_list: result };
+//     res.send(result);
+//   } else {
+//     res.send(users);
+//   }
+// });
 
 app.get("/users", (req, res) => {
-  res.send(users);
+  const { name, job } = req.query;
+
+  if (name !== undefined && job !== undefined) {
+    return res.send({ users_list: findUserByNameAndJob(name, job) });
+  }
+
+  if (name !== undefined) {
+    return res.send({ users_list: findUserByName(name) });
+  }
+
+  return res.send(users);
 });
 
 app.listen(port, () => {
