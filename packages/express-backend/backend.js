@@ -48,8 +48,9 @@ const findUserById = (id) =>
   users["users_list"].find((user) => user["id"] === id);
 
 const addUser = (user) => {
-  users["users_list"].push(user);
-  return user;
+    user.id = String(Math.random());
+    users["users_list"].push(user);
+    return user;
 };
 
 const deleteUser = (index) => {
@@ -80,7 +81,7 @@ app.delete("/users/:id", (req, res) => {
     if (result === undefined) {
     res.status(404).send("Resource not found.");
   } else {
-    deleteUser(id);
+    deleteUser(users.users_list.findIndex(user => user.id === id));
     res.status(204).send();
   }
 });
