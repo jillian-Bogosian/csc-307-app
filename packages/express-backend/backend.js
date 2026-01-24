@@ -48,7 +48,8 @@ const findUserById = (id) =>
   users["users_list"].find((user) => user["id"] === id);
 
 const addUser = (user) => {
-    user.id = String(Math.random());
+    var characters = 'abcdefghijklmnopqrstuvwxyz'
+    user.id = String(characters[Math.floor(Math.random() *25) ] + characters[Math.floor(Math.random() *25) ] + characters[Math.floor(Math.random() *25) ] + Math.floor(Math.random() * (999)));
     users["users_list"].push(user);
     return user;
 };
