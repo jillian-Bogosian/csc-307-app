@@ -1,6 +1,20 @@
 // backend.js
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+
+import userService from "./services/user-service.js";
+
+dotenv.config();
+
+const { MONGO_CONNECTION_STRING } = process.env;
+
+mongoose.set("debug", true);
+mongoose
+  .connect(MONGO_CONNECTION_STRING + "users") // connect to Db "users"
+  .catch((error) => console.log(error));
+
 
 const app = express();
 const port = 8000;
@@ -8,84 +22,112 @@ const port = 8000;
 app.use(cors());
 app.use(express.json());
 
-const users = {
-  users_list: [
-    {
-      id: "xyz789",
-      name: "Charlie",
-      job: "Janitor"
-    },
-    {
-      id: "abc123",
-      name: "Mac",
-      job: "Bouncer"
-    },
-    {
-      id: "ppp222",
-      name: "Mac",
-      job: "Professor"
-    },
-    {
-      id: "yat999",
-      name: "Dee",
-      job: "Aspring actress"
-    },
-    {
-      id: "zap555",
-      name: "Dennis",
-      job: "Bartender"
-    }
-  ]
-};
+// const users = {
+//   users_list: [
+//     {
+//       id: "xyz789",
+//       name: "Charlie",
+//       job: "Janitor"
+//     },
+//     {
+//       id: "abc123",
+//       name: "Mac",
+//       job: "Bouncer"
+//     },
+//     {
+//       id: "ppp222",
+//       name: "Mac",
+//       job: "Professor"
+//     },
+//     {
+//       id: "yat999",
+//       name: "Dee",
+//       job: "Aspring actress"
+//     },
+//     {
+//       id: "zap555",
+//       name: "Dennis",
+//       job: "Bartender"
+//     }
+//   ]
+// };
 
-const findUserByName = (name) => {
-  return users["users_list"].filter(
-    (user) => user["name"] === name
-  );
-};
+// const findUserByName = (name) => {
+//   return users["users_list"].filter(
+//     (user) => user["name"] === name
+//   );
+// };
 
-const findUserById = (id) =>
-  users["users_list"].find((user) => user["id"] === id);
+// const findUserById = (id) =>
+//   users["users_list"].find((user) => user["id"] === id);
 
-const addUser = (user) => {
-    var characters = 'abcdefghijklmnopqrstuvwxyz'
-    user.id = String(characters[Math.floor(Math.random() *25) ] + characters[Math.floor(Math.random() *25) ] + characters[Math.floor(Math.random() *25) ] + Math.floor(Math.random() * (999)));
-    users["users_list"].push(user);
-    return user;
-};
+// const addUser = (user) => {
+//     var characters = 'abcdefghijklmnopqrstuvwxyz'
+//     user.id = String(characters[Math.floor(Math.random() *25) ] + characters[Math.floor(Math.random() *25) ] + characters[Math.floor(Math.random() *25) ] + Math.floor(Math.random() * (999)));
+//     users["users_list"].push(user);
+//     return user;
+// };
 
-const deleteUser = (index) => {
-    users["users_list"].splice(index, 1);
-    return users["user_list"]
-};
+// const deleteUser = (index) => {
+//     users["users_list"].splice(index, 1);
+//     return users["user_list"]
+// };
 
 
 app.post("/users", (req, res) => {
   const userToAdd = req.body;
-  addUser(userToAdd);
-  res.status(201).send(userToAdd);
+  const promise = userService.addUser(userToAdd)
+  promise.then((result)=> {
+    res.status(201).send(result);
+  })
+  return
 });
 
 app.get("/users/:id", (req, res) => {
-  const id = req.params["id"]; //or req.params.id
-  let result = findUserById(id);
-  if (result === undefined) {
-    res.status(404).send("Resource not found.");
-  } else {
-    res.send(result);
+  const id = req.params["id"]; //or req.params.
+  
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).send("Invalid user id.");
+    return;
   }
+
+  const promise = userService.findUserById(id);
+  promise.then((result) => {
+    if (result === undefined) {
+    res.status(404).send("Resource not found.");
+    return
+    }
+    res.send(result)
+  })
 });
 
 app.delete("/users/:id", (req, res) => {
     const id = req.params["id"]; 
-    let result = findUserById(id);
-    if (result === undefined) {
-    res.status(404).send("Resource not found.");
-  } else {
-    deleteUser(users.users_list.findIndex(user => user.id === id));
-    res.status(204).send();
-  }
-});
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).send("Invalid user id.");
+    return;
+    }
+
+    const promise = userService.findUserById(id);
+    promise.then((result) => {
+      if (result === undefined) {
+        res.status(404).send("Resource not found.");
+        return
+      }
+      const deletePromise = userService.deleteUser(id);
+      deletePromise.then(() => {
+        res.status(204).send();
+      }).catch((err) => {
+        console.error(`DELETE /users/${id} (delete) error:`, err);
+        res.status(500).send("Server error.");
+      });
+    }).catch((err) => {
+      console.error(`DELETE /users/${id} (find) error:`, err);
+      res.status(500).send("Server error.");
+    });
+  });
+
 
 
 // app.get("/users", (req, res) => {
@@ -103,11 +145,11 @@ app.delete("/users/:id", (req, res) => {
 //   res.send(users);
 // });
 
-const findUserByNameAndJob = (name, job) => {
-  return users["users_list"].filter(
-    (user) => user["name"] === name && user["job"] === job
-  );
-};
+// const findUserByNameAndJob = (name, job) => {
+//   return users["users_list"].filter(
+//     (user) => user["name"] === name && user["job"] === job
+//   );
+// };
 
 
 // app.get("/users", (req, res) => {
@@ -127,14 +169,22 @@ app.get("/users", (req, res) => {
   const { name, job } = req.query;
 
   if (name !== undefined && job !== undefined) {
-    return res.send({ users_list: findUserByNameAndJob(name, job) });
+    const promise = userService.findUserByNameAndJob(name, job)
+    promise.then((result)=> {
+      res.send({ users_list: result });
+    })
+    return
   }
 
   if (name !== undefined) {
-    return res.send({ users_list: findUserByName(name) });
+    const promise = userService.findUserByName(name)
+    promise.then((result)=>{
+      res.send({ users_list: result });
+    })
+    return
   }
 
-  return res.send(users);
+  res.send(users);
 });
 
 app.listen(port, () => {
